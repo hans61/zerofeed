@@ -42,10 +42,10 @@ SMPWRTHRESMAX=50
 SMPWRTHRESMIN=20
 
 # SmartMeter IP (Tasmota) (update for your local network setup)
-SMIP=192.168.60.7
+SMIP=192.168.1.11
 
 # DTU IP (OpenDTU) (update for your local network setup)
-DTUIP=192.168.60.5
+DTUIP=192.168.1.10
 
 # DTU default admin user access (from OpenDTU installation)
 DTUUSER="admin:openDTU42"
@@ -54,15 +54,15 @@ DTUUSER="admin:openDTU42"
 # N.B. the size of this array has to be transferred to the arrays below
 # namely the arrays: DTULIM DTUMAXP DTUMINP DTULASTSOLPWR
 #DTUSN=(116190745467)
-DTUSN=(116190745467 116180400144 116190745954)
+DTUSN=(114191225784 112183846592 112183845286 112183845625 112183845820)
 
 # manual limits to override the detected inverter limits (in Watt) (0 = disabled)
 #DTULIM=(600 800 1000)
-DTULIM=(0 0 0)
+DTULIM=(800 400 400 400 400)
 
 # initialize arrays for inverter specific values
-DTUMAXP=(0 0 0)
-DTUMINP=(0 0 0)
+DTUMAXP=(0 0 0 0 0)
+DTUMINP=(0 0 0 0 0)
 
 # initialize arrays for inverter specific values
 DTULASTSOLPWR=(0 0 0)
@@ -88,9 +88,9 @@ getSOLPWR()
 
     # BREAKING CHANGE in openDTU API v24.2.12, 2024-01-30 see:
     # https://github.com/tbnobody/OpenDTU/releases/tag/v24.2.12
-    # read -d "\n" SOLALLPWR YIELDDAY SOLPWR <<< `curl -s http://$DTUIP/api/livedata/status | jq '.total.Power.v, .total.YieldDay.v, (.inverters[] | select(.serial == "'${DTUSN[$CURRDTU]}'").AC."0".Power.v)'`
-    read -d "\n" SOLALLPWR YIELDDAY SOLPWR <<< `curl -s http://$DTUIP/api/livedata/status?inv=${DTUSN[$CURRDTU]} | jq '.total.Power.v, .total.YieldDay.v, .inverters[].AC."0".Power.v'`
-
+    read -d "\n" SOLALLPWR YIELDDAY SOLPWR <<< `curl -s http://$DTUIP/api/livedata/status | jq '.total.Power.v, .total.YieldDay.v, (.inverters[] | select(.serial == "'${DTUSN[$CURRDTU]}'").AC."0".Power.v)'`
+    # read -d "\n" SOLALLPWR YIELDDAY SOLPWR <<< `curl -s http://$DTUIP/api/livedata/status?inv=${DTUSN[$CURRDTU]} | jq '.total.Power.v, .total.YieldDay.v, .inverters[].AC."0".Power.v'` # -> does not work with multiple inverters, the result of SOLPWR is an array
+	
     if [ -n "$SOLPWR" ]
     then
 	# remove fraction to make it an integer
@@ -162,7 +162,8 @@ getDTULIMREL()
 getSMPWR()
 {
     #SMPWR=`curl -s http://$SMIP/cm?cmnd=status%208 | jq '.StatusSNS.LK13BE.Power_curr'`
-    read -d "\n" SMPWR SMPWRIN SMPWROUT <<< `curl -s http://$SMIP/cm?cmnd=status%208 | jq '.StatusSNS.LK13BE | .Power_curr,.Power_total_in,.Power_total_out'`
+    #read -d "\n" SMPWR SMPWRIN SMPWROUT <<< `curl -s http://$SMIP/cm?cmnd=status%208 | jq '.StatusSNS.LK13BE | .Power_curr,.Power_total_in,.Power_total_out'`
+	read -d "\n" SMPWR SMPWRIN SMPWROUT <<< `curl -s http://$SMIP/cm?cmnd=status%208 | jq '.StatusSNS.DWS7410 | .power,.energy,.en_out'` # SM DWS7420.2.G2
     if [ -n "$SMPWR" ]
     then
 	# remove fraction to make it an integer
